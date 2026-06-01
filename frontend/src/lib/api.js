@@ -13,7 +13,10 @@ export const uploadSlip = async (file, userId) => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to upload slip');
+    const errorData = await response.json().catch(() => ({}));
+    const error = new Error(errorData.error || 'Failed to upload slip');
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();

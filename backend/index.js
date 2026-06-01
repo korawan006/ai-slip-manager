@@ -4,7 +4,7 @@ import cors from 'cors';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import { extractSlipData } from './services/gemini.service.js';
-import { insertTransaction, getTransactionsFromSupabase } from './services/supabase.service.js';
+import { insertTransaction, getTransactionsFromSupabase, checkDuplicateReference } from './services/supabase.service.js';
 
 dotenv.config();
 
@@ -28,6 +28,13 @@ app.post('/api/upload', upload.single('slip'), async (req, res) => {
     const userId = req.body.user_id || null;
 
     const slipData = await extractSlipData(mimeType, base64Data);
+
+    // Check for duplicate reference number
+    const referenceNo = slipData.referenceNo || slipData.refNo || '-';
+    const isDuplicate = await checkDuplicateReference(referenceNo);
+    if (isDuplicate) {
+      return res.status(409).json({ error: 'Duplicate slip detected. This transaction has already been registered.' });
+    }
 
     // Save to Supabase
     await insertTransaction(slipData, userId);

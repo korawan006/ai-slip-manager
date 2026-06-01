@@ -53,6 +53,35 @@ export const insertTransaction = async (data, userId = null) => {
 };
 
 /**
+ * Check if a reference_no already exists in the transactions table.
+ * Returns true if a duplicate is found.
+ */
+export const checkDuplicateReference = async (referenceNo) => {
+  if (!supabase) {
+    console.warn('Supabase client is not configured. Skipping duplicate check.');
+    return false;
+  }
+
+  // Skip check for placeholder/empty values
+  if (!referenceNo || referenceNo === '-') {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('reference_no', referenceNo)
+    .limit(1);
+
+  if (error) {
+    console.error('Error checking duplicate reference:', error);
+    throw error;
+  }
+
+  return data && data.length > 0;
+};
+
+/**
  * Fetch all transactions from Supabase, ordered by most recent first.
  */
 export const getTransactionsFromSupabase = async () => {

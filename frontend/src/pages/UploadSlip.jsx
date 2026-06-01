@@ -4,18 +4,20 @@ import { uploadSlip } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Card from '../components/Card';
-import { UploadCloud, CheckCircle2, FileImage, ShieldCheck } from 'lucide-react';
+import { UploadCloud, CheckCircle2, FileImage, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 export default function UploadSlip() {
   const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [duplicateError, setDuplicateError] = useState(false);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
       setResult(null);
+      setDuplicateError(false);
     }
   }, []);
 
@@ -39,7 +41,13 @@ export default function UploadSlip() {
       }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to extract slip data.', { id: toastId });
+      if (error.status === 409) {
+        setDuplicateError(true);
+        setFile(null);
+        toast.error('Duplicate slip detected!', { id: toastId });
+      } else {
+        toast.error('Failed to extract slip data.', { id: toastId });
+      }
     } finally {
       setLoading(false);
     }
@@ -69,6 +77,30 @@ export default function UploadSlip() {
         </h3>
         <p className="text-gray-400 text-sm">Supports PNG, JPG, JPEG</p>
       </div>
+
+      {duplicateError && (
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-sm p-5 animate-[fadeIn_0.3s_ease-out]">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-red-500/10 to-red-500/5 animate-pulse" />
+          <div className="relative flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center ring-2 ring-red-500/30 animate-[pulse_2s_ease-in-out_infinite]">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-red-400 font-bold text-lg mb-1">Duplicate Slip Detected</h4>
+              <p className="text-red-300/80 text-sm leading-relaxed">
+                This transaction has already been registered. Please upload a different slip.
+              </p>
+            </div>
+            <button
+              onClick={() => setDuplicateError(false)}
+              className="flex-shrink-0 text-red-400/60 hover:text-red-300 transition-colors text-xl leading-none mt-1"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {file && (
         <Card className="flex items-center justify-between">
