@@ -1,8 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export const uploadSlip = async (file, userId) => {
+export const uploadSlips = async (files, userId) => {
   const formData = new FormData();
-  formData.append('slip', file);
+  files.forEach((file) => {
+    formData.append('slips', file);
+  });
   if (userId) {
     formData.append('user_id', userId);
   }
@@ -14,7 +16,7 @@ export const uploadSlip = async (file, userId) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.error || 'Failed to upload slip');
+    const error = new Error(errorData.error || 'Failed to upload slips');
     error.status = response.status;
     throw error;
   }

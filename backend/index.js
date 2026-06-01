@@ -17,33 +17,54 @@ app.use(express.json());
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-app.post('/api/upload', upload.single('slip'), async (req, res) => {
+app.post('/api/upload', upload.array('slips', 5), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const mimeType = req.file.mimetype;
-    const base64Data = req.file.buffer.toString('base64');
     const userId = req.body.user_id || null;
+    const successful = [];
+    const duplicates = [];
+    const errors = [];
 
-    const slipData = await extractSlipData(mimeType, base64Data);
+    // Process files sequentially to avoid Gemini API rate limits
+    for (const file of req.files) {
+      const fileName = file.originalname;
 
-    // Check for duplicate reference number
-    const referenceNo = slipData.referenceNo || slipData.refNo || '-';
-    const isDuplicate = await checkDuplicateReference(referenceNo);
-    if (isDuplicate) {
-      return res.status(409).json({ error: 'Duplicate slip detected. This transaction has already been registered.' });
+      try {
+        const mimeType = file.mimetype;
+        const base64Data = file.buffer.toString('base64');
+
+        const slipData = await extractSlipData(mimeType, base64Data);
+
+        // Check for duplicate reference number
+        const referenceNo = slipData.referenceNo || slipData.refNo || '-';
+        const isDuplicate = await checkDuplicateReference(referenceNo);
+
+        if (isDuplicate) {
+          duplicates.push({
+            fileName,
+            message: 'Duplicate slip detected. This transaction has already been registered.'
+          });
+          continue;
+        }
+
+        // Save to Supabase
+        await insertTransaction(slipData, userId);
+        console.log(`Successfully saved ${fileName} to Supabase`);
+
+        successful.push({ fileName, data: slipData });
+      } catch (fileError) {
+        console.error(`Error processing ${fileName}:`, fileError);
+        errors.push({ fileName, message: fileError.message || 'Failed to process slip' });
+      }
     }
 
-    // Save to Supabase
-    await insertTransaction(slipData, userId);
-    console.log('Successfully saved to Supabase');
-
-    res.json({ success: true, data: slipData });
+    res.json({ success: true, successful, duplicates, errors });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to process slip' });
+    res.status(500).json({ error: 'Failed to process slips' });
   }
 });
 
