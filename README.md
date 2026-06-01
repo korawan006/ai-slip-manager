@@ -13,6 +13,7 @@
 
 **AI Slip Manager** is a full-stack web application that uses **Google Gemini AI** to automatically extract structured data from Thai bank transfer slips (e-slips). Simply upload a slip image, and the AI reads it — no manual data entry needed.
 
+[Features](#-key-features) · [Tech Stack](#-tech-stack) · [Architecture](#-system-architecture) · [Getting Started](#-getting-started) · [Environment Variables](#-environment-variables)
 
 </div>
 
@@ -100,3 +101,160 @@
                                │                      │
                                │  Image → JSON data   │
                                └──────────────────────┘
+```
+
+**Flow:**
+1. User signs in with **Google OAuth** through Supabase Auth
+2. User uploads a bank slip image on the **Upload** page
+3. The backend sends the image to **Gemini AI** for OCR extraction
+4. Extracted data (amount, date, sender, etc.) is stored in **Supabase PostgreSQL**
+5. The **Dashboard** displays aggregated stats & revenue charts
+6. **Transaction History** lets users search, browse, and **export to CSV**
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **npm** ≥ 9
+- A **Supabase** project ([create one free](https://supabase.com/))
+- A **Google Gemini API Key** ([get one here](https://aistudio.google.com/apikey))
+- **Google OAuth** configured in your Supabase project dashboard
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/korawan006/ai-slip-manager.git
+cd ai-slip-manager
+
+# 2. Install backend dependencies
+cd backend
+npm install
+
+# 3. Install frontend dependencies
+cd ../frontend
+npm install
+```
+
+### 🔑 Environment Variables
+
+You need to create **two** `.env` files:
+
+#### `backend/.env`
+
+```env
+PORT=5000
+GEMINI_API_KEY=your_gemini_api_key_here
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key_here
+```
+
+#### `frontend/.env`
+
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+> [!NOTE]
+> The backend uses the **service role key** for server-side operations, while the frontend uses the **anon key** with RLS enforcing user-level access control.
+
+### 🗄️ Supabase Database Setup
+
+Create a `transactions` table with the following columns:
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | `uuid` | Primary key, auto-generated |
+| `user_id` | `uuid` | References `auth.users(id)` |
+| `name` | `text` | Sender name |
+| `date` | `text` | Transaction date |
+| `time` | `text` | Transaction time |
+| `amount` | `numeric` | Transfer amount |
+| `sender_bank` | `text` | Sender bank name |
+| `receiver_bank` | `text` | Receiver bank name |
+| `reference_no` | `text` | Reference / tracking number |
+| `created_at` | `timestamptz` | Auto-generated timestamp |
+
+**Enable Row-Level Security (RLS)** and add a policy:
+
+```sql
+-- Users can only read their own transactions
+CREATE POLICY "Users can view own transactions"
+  ON transactions FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Users can insert their own transactions
+CREATE POLICY "Users can insert own transactions"
+  ON transactions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
+
+### ▶️ Run the Application
+
+```bash
+# Terminal 1 — Start the backend
+cd backend
+npm run dev       # Runs on http://localhost:5000
+
+# Terminal 2 — Start the frontend
+cd frontend
+npm run dev       # Runs on http://localhost:5173
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser and sign in with Google!
+
+---
+
+## 📂 Project Structure
+
+```text
+ai-slip-manager/
+├── backend/
+│   ├── services/
+│   │   ├── gemini.service.js       # Gemini AI OCR extraction
+│   │   └── supabase.service.js     # Supabase DB operations
+│   ├── index.js                    # Express server & API routes
+│   ├── package.json
+│   └── .env                        # Backend environment variables
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Layout.jsx          # App shell with sidebar
+│   │   │   ├── Sidebar.jsx         # Navigation sidebar
+│   │   │   └── Card.jsx            # Reusable card component
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx     # Auth state & Google OAuth
+│   │   ├── lib/
+│   │   │   └── supabase.js         # Supabase client instance
+│   │   ├── pages/
+│   │   │   ├── Login.jsx           # Google OAuth login page
+│   │   │   ├── Dashboard.jsx       # Revenue stats & charts
+│   │   │   ├── UploadSlip.jsx      # Slip upload with drag & drop
+│   │   │   └── TransactionHistory.jsx  # Searchable table + CSV export
+│   │   ├── App.jsx                 # Routes & route guards
+│   │   └── main.jsx                # React entry point
+│   ├── package.json
+│   └── .env                        # Frontend environment variables
+│
+└── README.md
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
