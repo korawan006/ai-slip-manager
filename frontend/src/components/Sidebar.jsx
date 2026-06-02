@@ -1,10 +1,27 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, UploadCloud, ReceiptText, LogOut } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, UploadCloud, ReceiptText, LogOut, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  // Auto-close sidebar on route change (mobile)
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, setMobileOpen]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   const links = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -25,15 +42,26 @@ export default function Sidebar() {
     }
   };
 
-  return (
-    <div className="w-64 border-r border-border bg-card/40 backdrop-blur-xl h-full flex flex-col p-4 fixed left-0 top-0 z-50">
-      <div className="flex items-center gap-3 mb-10 px-2 mt-4">
-        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center neon-border">
-          <div className="w-4 h-4 rounded-sm bg-primary shadow-[0_0_10px_theme('colors.primary.DEFAULT')]" />
+  const sidebarContent = (
+    <>
+      {/* Header with logo + close (mobile only) */}
+      <div className="flex items-center justify-between mb-10 px-2 mt-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.5),inset_0_0_12px_rgba(99,102,241,0.3)]">
+            <div className="w-4 h-4 rounded-sm bg-primary shadow-[0_0_10px_theme('colors.primary.DEFAULT')]" />
+          </div>
+          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+            AI Slip Manager
+          </h1>
         </div>
-        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-          AI Slip Manager
-        </h1>
+        {/* Close button — visible only below md */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="Close sidebar"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <nav className="flex-1 space-y-2">
@@ -44,10 +72,9 @@ export default function Sidebar() {
               key={link.name}
               to={link.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 relative group ${
-                  isActive
-                    ? 'text-white'
-                    : 'text-gray-400 hover:text-white'
+                `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 relative group ${isActive
+                  ? 'text-white'
+                  : 'text-gray-400 hover:text-white'
                 }`
               }
             >
@@ -56,11 +83,11 @@ export default function Sidebar() {
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-xl"
+                      className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-xl shadow-[0_0_12px_rgba(99,102,241,0.15)]"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'}`} />
+                  <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-primary drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]' : 'group-hover:text-primary transition-colors'}`} />
                   <span className="font-medium relative z-10">{link.name}</span>
                 </>
               )}
@@ -101,6 +128,42 @@ export default function Sidebar() {
           Sign Out
         </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — hidden below md, flex on md+ */}
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 z-40 flex-col p-4 border-r border-border bg-card/40 backdrop-blur-xl">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile sidebar — slide-in drawer, only below md */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => setMobileOpen(false)}
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              className="md:hidden fixed inset-y-0 left-0 w-64 z-[70] flex flex-col p-4 bg-card/95 backdrop-blur-xl border-r border-border shadow-[4px_0_30px_rgba(99,102,241,0.08)]"
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

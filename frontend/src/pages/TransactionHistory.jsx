@@ -150,12 +150,12 @@ export default function TransactionHistory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 md:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Transaction History</h1>
-          <p className="text-gray-400">View and search all extracted slip records.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Transaction History</h1>
+          <p className="text-gray-400 text-sm md:text-base">View and search all extracted slip records.</p>
         </div>
 
         <button
@@ -163,7 +163,7 @@ export default function TransactionHistory() {
           onClick={exportToCSV}
           disabled={filtered.length === 0}
           title="Export to CSV"
-          className="group flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.03] active:scale-95"
+          className="group flex items-center gap-2 px-4 md:px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.03] active:scale-95 text-sm md:text-base"
         >
           <Download className="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
           <span className="hidden sm:inline">Export CSV</span>
@@ -176,17 +176,17 @@ export default function TransactionHistory() {
       </div>
 
       {/* Filters Bar */}
-      <Card className="p-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+      <Card className="p-3 md:p-4">
+        <div className="flex flex-col lg:flex-row gap-3 md:gap-4 items-start lg:items-center">
           {/* Search input */}
           <div className="relative flex-1 w-full lg:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-gray-500" />
             <input
               type="text"
               placeholder="Search by name, bank, or reference..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2.5 bg-black/30 border border-border rounded-xl text-white focus:outline-none focus:border-primary transition-colors w-full placeholder:text-gray-500"
+              className="pl-9 md:pl-10 pr-4 py-2 md:py-2.5 bg-black/30 border border-border rounded-xl text-white text-sm md:text-base focus:outline-none focus:border-primary transition-colors w-full placeholder:text-gray-500"
             />
           </div>
 
@@ -194,18 +194,18 @@ export default function TransactionHistory() {
           <div className="hidden lg:block w-px h-8 bg-border"></div>
 
           {/* Date range inputs */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
             <div className="flex items-center gap-2 text-gray-400">
               <CalendarDays className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium whitespace-nowrap">Date Range</span>
+              <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Date Range</span>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 bg-black/30 border border-border rounded-xl text-white focus:outline-none focus:border-primary transition-colors text-sm [color-scheme:dark] w-full sm:w-auto"
+                className="px-2 md:px-3 py-1.5 md:py-2 bg-black/30 border border-border rounded-xl text-white focus:outline-none focus:border-primary transition-colors text-xs md:text-sm [color-scheme:dark] w-full sm:w-auto min-w-0"
                 title="Start Date"
               />
               <span className="text-gray-500 text-sm">to</span>
@@ -213,7 +213,7 @@ export default function TransactionHistory() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 bg-black/30 border border-border rounded-xl text-white focus:outline-none focus:border-primary transition-colors text-sm [color-scheme:dark] w-full sm:w-auto"
+                className="px-2 md:px-3 py-1.5 md:py-2 bg-black/30 border border-border rounded-xl text-white focus:outline-none focus:border-primary transition-colors text-xs md:text-sm [color-scheme:dark] w-full sm:w-auto min-w-0"
                 title="End Date"
               />
             </div>
@@ -222,7 +222,7 @@ export default function TransactionHistory() {
             {hasDateFilter && (
               <button
                 onClick={clearDateFilter}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-gray-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 border border-border hover:border-red-500/30 rounded-xl transition-all duration-200"
+                className="flex items-center gap-1 px-3 py-1.5 md:py-2 text-xs text-gray-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 border border-border hover:border-red-500/30 rounded-xl transition-all duration-200"
                 title="Clear date filter"
               >
                 <X className="w-3 h-3" />
@@ -234,7 +234,7 @@ export default function TransactionHistory() {
 
         {/* Active filter indicator */}
         {(searchTerm || hasDateFilter) && (
-          <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-sm text-gray-400">
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-xs md:text-sm text-gray-400">
             <span>
               Showing <span className="text-primary font-semibold">{filtered.length}</span> of{' '}
               <span className="text-white font-semibold">{transactions.length}</span> transactions
@@ -243,8 +243,8 @@ export default function TransactionHistory() {
         )}
       </Card>
 
-      {/* Transactions Table */}
-      <Card className="p-0 overflow-hidden">
+      {/* --- Desktop Table (hidden on mobile) --- */}
+      <Card className="p-0 overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -304,6 +304,71 @@ export default function TransactionHistory() {
           </table>
         </div>
       </Card>
+
+      {/* --- Mobile Card List (visible only on mobile) --- */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <Card>
+            <div className="flex flex-col items-center gap-2 py-8 text-gray-500">
+              <Search className="w-8 h-8 text-gray-600" />
+              <p className="text-sm">No transactions found.</p>
+              {(searchTerm || hasDateFilter) && (
+                <p className="text-xs text-gray-600">Try adjusting your search or date filters.</p>
+              )}
+            </div>
+          </Card>
+        ) : (
+          filtered.map((tx) => (
+            <Card
+              key={tx.id}
+              className={`p-4 transition-all duration-200 ${
+                deletingId === tx.id ? 'opacity-50 scale-95' : ''
+              }`}
+            >
+              {/* Top row: amount + delete */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-lg font-bold text-primary">฿{tx.amount.toLocaleString()}</span>
+                <button
+                  onClick={() => handleDelete(tx.id, tx.senderName)}
+                  disabled={deletingId === tx.id}
+                  title="Delete transaction"
+                  className="group p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div>
+                  <p className="text-xs text-gray-500">Date</p>
+                  <p className="text-white">{tx.date}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Time</p>
+                  <p className="text-gray-300">{tx.time}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Sender</p>
+                  <p className="text-white truncate">{tx.senderName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Sender Bank</p>
+                  <p className="text-white truncate">{tx.senderBank}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Receiver Bank</p>
+                  <p className="text-white truncate">{tx.receiverBank}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Ref No</p>
+                  <p className="text-gray-400 font-mono text-xs break-all">{tx.referenceNo}</p>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }

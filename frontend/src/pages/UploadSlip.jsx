@@ -71,15 +71,15 @@ export default function UploadSlip() {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 md:space-y-8 max-w-4xl mx-auto">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-white mb-2">Upload Slips</h1>
-        <p className="text-gray-400">Drag and drop up to 5 Thai bank transfer slips to extract data automatically.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Upload Slips</h1>
+        <p className="text-gray-400 text-sm md:text-base">Drag and drop up to 5 Thai bank transfer slips to extract data automatically.</p>
       </div>
 
       <div
         {...getRootProps()}
-        className={`glass rounded-3xl p-12 text-center cursor-pointer border-2 border-dashed transition-all duration-300 ${
+        className={`glass rounded-2xl md:rounded-3xl p-6 md:p-12 text-center cursor-pointer border-2 border-dashed transition-all duration-300 ${
           isDragActive ? 'border-primary bg-primary/10 neon-border' : 'border-white/10 hover:border-primary/50 hover:bg-card/80'
         }`}
       >
@@ -89,7 +89,7 @@ export default function UploadSlip() {
             <UploadCloud className={`w-10 h-10 ${isDragActive ? 'text-primary neon-text' : 'text-primary'}`} />
           </div>
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">
+        <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
           {isDragActive ? 'Drop slips here' : 'Select or drop slip images'}
         </h3>
         <p className="text-gray-400 text-sm">Supports PNG, JPG, JPEG · Up to 5 files</p>
@@ -98,15 +98,15 @@ export default function UploadSlip() {
       {/* Selected files list */}
       {files.length > 0 && (
         <Card>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <Copy className="w-5 h-5 text-primary" />
-              <h3 className="text-white font-semibold">{files.length} file{files.length > 1 ? 's' : ''} selected</h3>
+              <h3 className="text-white font-semibold text-sm md:text-base">{files.length} file{files.length > 1 ? 's' : ''} selected</h3>
             </div>
             <button
               onClick={handleUpload}
               disabled={loading}
-              className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_theme('colors.primary.DEFAULT')]"
+              className="w-full sm:w-auto px-5 md:px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_theme('colors.primary.DEFAULT')] text-sm md:text-base"
             >
               {loading ? 'Processing...' : `Upload & Extract (${files.length})`}
             </button>
@@ -166,7 +166,7 @@ export default function UploadSlip() {
                       <FileImage className="w-4 h-4" />
                       {item.fileName}
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       <div>
                         <p className="text-xs text-gray-500 mb-0.5">Amount</p>
                         <p className="text-white font-bold">฿{item.data.amount}</p>
