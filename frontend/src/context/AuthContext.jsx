@@ -40,6 +40,27 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const emailLogin = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      console.error('Email login error:', error.message);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+    if (error) {
+      console.error('Password reset error:', error.message);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -52,6 +73,8 @@ export function AuthProvider({ children }) {
     user,
     loading,
     oAuthLogin,
+    emailLogin,
+    resetPassword,
     logout,
   };
 

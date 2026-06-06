@@ -1,9 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
-import { Search, Download, Trash2, CalendarDays, X } from 'lucide-react';
+import { Search, Download, Trash2, CalendarDays, X, Columns3, ChevronDown, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Column definitions for CSV export
+const CSV_COLUMNS = [
+  { key: 'date',         label: 'Date',          getValue: (tx) => tx.date },
+  { key: 'time',         label: 'Time',          getValue: (tx) => tx.time },
+  { key: 'amount',       label: 'Amount (THB)',   getValue: (tx) => tx.amount },
+  { key: 'senderName',   label: 'Sender Name',    getValue: (tx) => `"${(tx.senderName || '-').replace(/"/g, '""')}"` },
+  { key: 'senderBank',   label: 'Sender Bank',    getValue: (tx) => `"${(tx.senderBank || '-').replace(/"/g, '""')}"` },
+  { key: 'receiverBank', label: 'Receiver Bank',   getValue: (tx) => `"${(tx.receiverBank || '-').replace(/"/g, '""')}"` },
+  { key: 'referenceNo',  label: 'Reference No',   getValue: (tx) => `"${(tx.referenceNo || '-').replace(/"/g, '""')}"` },
+];
 
 export default function TransactionHistory() {
   const { user } = useAuth();
@@ -13,6 +24,36 @@ export default function TransactionHistory() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [selectedColumns, setSelectedColumns] = useState(() => CSV_COLUMNS.map(c => c.key));
+  const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const columnPickerRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (columnPickerRef.current && !columnPickerRef.current.contains(e.target)) {
+        setShowColumnPicker(false);
+      }
+    };
+    if (showColumnPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showColumnPicker]);
+
+  const toggleColumn = (key) => {
+    setSelectedColumns(prev =>
+      prev.includes(key)
+        ? prev.filter(k => k !== key)
+        : [...prev, key]
+    );
+  };
+
+  const toggleAllColumns = () => {
+    setSelectedColumns(prev =>
+      prev.length === CSV_COLUMNS.length ? [] : CSV_COLUMNS.map(c => c.key)
+    );
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,22 +152,17 @@ export default function TransactionHistory() {
     }
   };
 
-  // CSV export — only exports the currently filtered/visible data
+  // CSV export — dynamically builds columns based on user selection
   const exportToCSV = () => {
-    if (filtered.length === 0) return;
+    if (filtered.length === 0 || selectedColumns.length === 0) return;
 
-    const headers = ['Date', 'Time', 'Amount (THB)', 'Sender Name', 'Sender Bank', 'Receiver Bank', 'Reference No'];
+    const activeCols = CSV_COLUMNS.filter(c => selectedColumns.includes(c.key));
+    const headers = activeCols.map(c => c.label);
     const csvRows = [
       headers.join(','),
-      ...filtered.map(tx => [
-        tx.date,
-        tx.time,
-        tx.amount,
-        `"${(tx.senderName || '-').replace(/"/g, '""')}"`,
-        `"${(tx.senderBank || '-').replace(/"/g, '""')}"`,
-        `"${(tx.receiverBank || '-').replace(/"/g, '""')}"`,
-        `"${(tx.referenceNo || '-').replace(/"/g, '""')}"`,
-      ].join(','))
+      ...filtered.map(tx =>
+        activeCols.map(c => c.getValue(tx)).join(',')
+      ),
     ];
 
     const csvString = csvRows.join('\n');
@@ -158,21 +194,91 @@ export default function TransactionHistory() {
           <p className="text-gray-400 text-sm md:text-base">View and search all extracted slip records.</p>
         </div>
 
-        <button
-          id="export-csv-btn"
-          onClick={exportToCSV}
-          disabled={filtered.length === 0}
-          title="Export to CSV"
-          className="group flex items-center gap-2 px-4 md:px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.03] active:scale-95 text-sm md:text-base"
-        >
-          <Download className="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
-          <span className="hidden sm:inline">Export CSV</span>
-          {filtered.length !== transactions.length && (
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
-              {filtered.length} rows
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Select Columns dropdown */}
+          <div className="relative" ref={columnPickerRef}>
+            <button
+              id="select-columns-btn"
+              onClick={() => setShowColumnPicker(prev => !prev)}
+              className={`group flex items-center gap-2 px-3 md:px-4 py-2 border rounded-xl text-sm md:text-base font-medium transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer ${
+                showColumnPicker
+                  ? 'bg-primary/15 border-primary/40 text-primary shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                  : 'bg-card/60 border-border text-gray-300 hover:text-white hover:border-gray-500'
+              }`}
+            >
+              <Columns3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Columns</span>
+              {selectedColumns.length < CSV_COLUMNS.length && (
+                <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+                  {selectedColumns.length}/{CSV_COLUMNS.length}
+                </span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showColumnPicker ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown panel */}
+            {showColumnPicker && (
+              <div
+                className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_15px_rgba(99,102,241,0.15)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+              >
+                {/* Select All header */}
+                <button
+                  onClick={toggleAllColumns}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/5 border-b border-border/60 transition-colors cursor-pointer"
+                >
+                  <span>{selectedColumns.length === CSV_COLUMNS.length ? 'Deselect All' : 'Select All'}</span>
+                  <span className="text-primary font-bold normal-case text-xs">
+                    {selectedColumns.length}/{CSV_COLUMNS.length}
+                  </span>
+                </button>
+
+                {/* Column checkboxes */}
+                <div className="py-1 max-h-60 overflow-y-auto">
+                  {CSV_COLUMNS.map((col) => {
+                    const isChecked = selectedColumns.includes(col.key);
+                    return (
+                      <button
+                        key={col.key}
+                        onClick={() => toggleColumn(col.key)}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-150 cursor-pointer ${
+                          isChecked
+                            ? 'text-white hover:bg-white/5'
+                            : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                          isChecked
+                            ? 'bg-primary border-primary shadow-[0_0_8px_rgba(99,102,241,0.4)]'
+                            : 'border-gray-600 bg-transparent'
+                        }`}>
+                          {isChecked && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span>{col.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export CSV button */}
+          <button
+            id="export-csv-btn"
+            onClick={exportToCSV}
+            disabled={filtered.length === 0 || selectedColumns.length === 0}
+            title={selectedColumns.length === 0 ? 'Select at least one column' : 'Export to CSV'}
+            className="group flex items-center gap-2 px-4 md:px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.03] active:scale-95 text-sm md:text-base cursor-pointer"
+          >
+            <Download className="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+            <span className="hidden sm:inline">Export CSV</span>
+            {filtered.length !== transactions.length && (
+              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                {filtered.length} rows
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Filters Bar */}

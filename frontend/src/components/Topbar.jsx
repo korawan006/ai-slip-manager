@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { Menu, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Topbar({ onMenuToggle }) {
@@ -28,9 +28,7 @@ export default function Topbar({ onMenuToggle }) {
 
       {/* Centered logo */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-        <div className="w-6 h-6 rounded-md bg-primary/20 flex items-center justify-center shadow-[0_0_8px_rgba(99,102,241,0.4)]">
-          <div className="w-3 h-3 rounded-sm bg-primary shadow-[0_0_6px_rgba(99,102,241,0.6)]" />
-        </div>
+        <QrCode className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
         <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 whitespace-nowrap">
           AI Slip Manager
         </span>

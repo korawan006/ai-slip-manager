@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UploadCloud, ReceiptText, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, UploadCloud, ReceiptText, LogOut, X, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
@@ -47,9 +47,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
       {/* Header with logo + close (mobile only) */}
       <div className="flex items-center justify-between mb-10 px-2 mt-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.5),inset_0_0_12px_rgba(99,102,241,0.3)]">
-            <div className="w-4 h-4 rounded-sm bg-primary shadow-[0_0_10px_theme('colors.primary.DEFAULT')]" />
-          </div>
+          <QrCode className="w-7 h-7 text-primary drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
             AI Slip Manager
           </h1>

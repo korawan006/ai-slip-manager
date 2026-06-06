@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import UploadSlip from './pages/UploadSlip';
 import TransactionHistory from './pages/TransactionHistory';
 import Login from './pages/Login';
+import UpdatePassword from './pages/UpdatePassword';
 
 // Route guard — redirects to /login if not authenticated
 function ProtectedRoute({ children }) {
@@ -94,6 +95,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Password reset landing — user arrives here from Supabase email */}
+          <Route path="/update-password" element={<UpdatePassword />} />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
