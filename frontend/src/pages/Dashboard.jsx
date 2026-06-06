@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, CreditCard, Activity, CalendarDays, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, CalendarDays, X } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -37,7 +37,7 @@ export default function Dashboard() {
   }, [user]);
 
   // Derive filtered transactions + summary from date range
-  const { filteredRows, totalRevenue, totalTransactions, chartData } = useMemo(() => {
+  const { filteredRows, totalRevenue, growthPercentage, isPositiveGrowth, peakHourString, chartData } = useMemo(() => {
     const filtered = transactions.filter((t) => {
       const txDate = t.date; // YYYY-MM-DD
       const afterStart = !startDate || txDate >= startDate;
@@ -46,8 +46,61 @@ export default function Dashboard() {
     });
 
     const totalRevenue = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const totalTransactions = filtered.length;
 
+    // --- Revenue Growth (MoM) ---
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth(); // 0-indexed
+    const prevMonth = curMonth === 0 ? 11 : curMonth - 1;
+    const prevYear = curMonth === 0 ? curYear - 1 : curYear;
+
+    const revenueForMonth = (y, m) =>
+      transactions
+        .filter((t) => {
+          const d = new Date(t.date || t.created_at);
+          return d.getFullYear() === y && d.getMonth() === m;
+        })
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+    const curMonthRevenue = revenueForMonth(curYear, curMonth);
+    const prevMonthRevenue = revenueForMonth(prevYear, prevMonth);
+
+    let growthPercentage = 0;
+    let isPositiveGrowth = true;
+    if (prevMonthRevenue > 0) {
+      growthPercentage = ((curMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+      isPositiveGrowth = growthPercentage >= 0;
+    } else if (curMonthRevenue > 0) {
+      growthPercentage = 100;
+      isPositiveGrowth = true;
+    }
+
+    // --- Peak Hour ---
+    const hourCounts = {};
+    filtered.forEach((t) => {
+      const timeStr = t.time || t.created_at;
+      if (!timeStr) return;
+      let hour;
+      if (t.time) {
+        hour = parseInt(t.time.split(':')[0], 10);
+      } else {
+        hour = new Date(t.created_at).getHours();
+      }
+      if (!isNaN(hour)) {
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      }
+    });
+
+    let peakHourString = 'N/A';
+    const hourEntries = Object.entries(hourCounts);
+    if (hourEntries.length > 0) {
+      const peakHour = hourEntries.reduce((a, b) => (Number(b[1]) > Number(a[1]) ? b : a))[0];
+      const h = parseInt(peakHour, 10);
+      const nextH = (h + 1) % 24;
+      peakHourString = `${String(h).padStart(2, '0')}:00 - ${String(nextH).padStart(2, '0')}:00`;
+    }
+
+    // --- Revenue by Date (Chart) ---
     const revenueByDate = filtered.reduce((acc, t) => {
       const date = t.date;
       if (date) {
@@ -61,7 +114,7 @@ export default function Dashboard() {
       revenue: revenueByDate[date]
     }));
 
-    return { filteredRows: filtered, totalRevenue, totalTransactions, chartData };
+    return { filteredRows: filtered, totalRevenue, growthPercentage, isPositiveGrowth, peakHourString, chartData };
   }, [transactions, startDate, endDate]);
 
   const hasDateFilter = startDate || endDate;
@@ -137,7 +190,7 @@ export default function Dashboard() {
           {/* Filter status */}
           {hasDateFilter && (
             <div className="mt-auto text-sm text-gray-400 sm:ml-auto">
-              Showing <span className="text-primary font-semibold">{totalTransactions}</span> of{' '}
+              Showing <span className="text-primary font-semibold">{filteredRows.length}</span> of{' '}
               <span className="text-white font-semibold">{transactions.length}</span> transactions
             </div>
           )}
@@ -157,31 +210,39 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Total Transactions */}
+        {/* Revenue Growth */}
         <Card className="flex items-center gap-4 w-full">
-          <div className="p-3.5 lg:p-4 bg-accent/15 rounded-xl shadow-[0_0_16px_rgba(168,85,247,0.3),inset_0_0_12px_rgba(168,85,247,0.15)]">
-            <CreditCard className="w-7 h-7 lg:w-8 lg:h-8 text-accent drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
+          <div className={`p-3.5 lg:p-4 rounded-xl ${
+            isPositiveGrowth
+              ? 'bg-emerald-500/15 shadow-[0_0_16px_rgba(16,185,129,0.3),inset_0_0_12px_rgba(16,185,129,0.15)]'
+              : 'bg-rose-500/15 shadow-[0_0_16px_rgba(244,63,94,0.3),inset_0_0_12px_rgba(244,63,94,0.15)]'
+          }`}>
+            {isPositiveGrowth ? (
+              <TrendingUp className="w-7 h-7 lg:w-8 lg:h-8 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            ) : (
+              <TrendingDown className="w-7 h-7 lg:w-8 lg:h-8 text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-400 font-medium tracking-wide">Total Transactions</p>
-            <h3 className="text-xl lg:text-2xl font-bold text-white">{totalTransactions}</h3>
+            <p className="text-sm text-gray-400 font-medium tracking-wide">Revenue Growth</p>
+            <h3 className={`text-xl lg:text-2xl font-bold ${
+              isPositiveGrowth ? 'text-emerald-400' : 'text-rose-400'
+            }`}>
+              {isPositiveGrowth ? '+' : ''}{growthPercentage.toFixed(1)}%
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">vs. last month</p>
           </div>
         </Card>
 
-        {/* System Status */}
+        {/* Peak Hour */}
         <Card className="flex items-center gap-4 w-full">
-          <div className="p-3.5 lg:p-4 bg-emerald-500/15 rounded-xl shadow-[0_0_16px_rgba(16,185,129,0.3),inset_0_0_12px_rgba(16,185,129,0.15)]">
-            <Activity className="w-7 h-7 lg:w-8 lg:h-8 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <div className="p-3.5 lg:p-4 bg-amber-500/15 rounded-xl shadow-[0_0_16px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]">
+            <Clock className="w-7 h-7 lg:w-8 lg:h-8 text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-400 font-medium tracking-wide">System Status</p>
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl lg:text-2xl font-bold text-white">Online</h3>
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]"></span>
-              </span>
-            </div>
+            <p className="text-sm text-gray-400 font-medium tracking-wide">Peak Hour</p>
+            <h3 className="text-xl lg:text-2xl font-bold text-amber-400">{peakHourString}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">busiest transaction window</p>
           </div>
         </Card>
       </div>
